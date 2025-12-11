@@ -44,10 +44,8 @@ export class HashMap {
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
-
-        const entry = bin.findBy(->(entry) entry.hash == hash)
+        const entry = self.find_entry_in_bin(bin, key, hash)
         if entry instanceof HashMapEntry {
-            assert entry.hash == hash
             entry.value = value
             return self
         }
@@ -66,7 +64,7 @@ export class HashMap {
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
-        const entry = bin.findBy(->(entry) entry.hash == hash)
+        const entry = self.find_entry_in_bin(bin, key, hash)
         if entry == null return null
         entry.value
     }
@@ -76,7 +74,7 @@ export class HashMap {
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
-        bin.findBy(->(entry) entry.hash == hash) != null
+        self.find_entry_in_bin(bin, key, hash) != null
     }
 
     func remove(key) {
@@ -84,9 +82,10 @@ export class HashMap {
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
-        const old_length = bin.length
-        self.bins[bin_index] = self.bins.filter(->(entry) entry.hash != hash)
-        self.bins[bin_index].length != old_length
+        const index = self.find_entry_index_in_bin(bin, key, hash)
+        if index == null return false
+        bin.erase(index, 1)
+        true
     }
 
     func entries = self.bins.flatten()
@@ -99,5 +98,18 @@ export class HashMap {
     func notEmpty = self.size() > 0
 
     private func key_to_hash(key) = key.hashcode
+
     private func hash_to_bin_index(hash) = hash % self.bins_count
+
+    private func find_entry_in_bin(bin, key, hash) {
+        bin.findBy(->(entry) {
+            entry.hash == hash && entry.key == key
+        })
+    }
+
+    private func find_entry_index_in_bin(bin, key, hash) {
+        bin.findIndexBy(->(entry) {
+            entry.hash == hash && entry.key == key
+        })
+    }
 }
