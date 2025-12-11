@@ -804,7 +804,7 @@ class Timer {
                 const value = self[i]
 
                 if callback(value, i, self) {
-                    return i
+                    return self[i]
                 }
 
                 i += 1
