@@ -33,10 +33,12 @@ class HashMapEntry {
 export class HashMap {
     private property bins_count
     private property bins
+    private property length
 
     func constructor {
         self.bins_count = 128
         self.bins = List.create_with(self.bins_count, ->[])
+        self.length = 0
     }
 
     func set(key, value) {
@@ -51,6 +53,7 @@ export class HashMap {
         }
 
         bin.push(HashMapEntry(key, hash, value))
+        self.length += 1
         self
     }
 
@@ -85,6 +88,7 @@ export class HashMap {
         const index = self.find_entry_index_in_bin(bin, key, hash)
         if index == null return false
         bin.erase(index, 1)
+        self.length -= 1
         true
     }
 
@@ -93,9 +97,9 @@ export class HashMap {
     func values = self.entries().map(->(entry) entry.value)
     func each(...args) = self.entries().each(...args)
     func map(...args) = self.entries().map(...args)
-    func size = self.entries().length
-    func empty = self.size() == 0
-    func notEmpty = self.size() > 0
+    func size = self.length
+    func empty = self.length == 0
+    func notEmpty = self.length > 0
 
     private func key_to_hash(key) = key.hashcode
 
