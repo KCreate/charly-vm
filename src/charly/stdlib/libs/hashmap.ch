@@ -42,7 +42,6 @@ export class HashMap {
     }
 
     func set(key, value) {
-        assert key instanceof String
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
@@ -58,12 +57,10 @@ export class HashMap {
     }
 
     func set_if_not_exist(key, value) {
-        assert key instanceof String
         if !self.contains(key) self.set(key, value)
     }
 
     func at(key) {
-        assert key instanceof String
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
@@ -73,7 +70,6 @@ export class HashMap {
     }
 
     func contains(key) {
-        assert key instanceof String
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
@@ -81,7 +77,6 @@ export class HashMap {
     }
 
     func remove(key) {
-        assert key instanceof String
         const hash = self.key_to_hash(key)
         const bin_index = self.hash_to_bin_index(hash)
         const bin = self.bins[bin_index]
@@ -101,7 +96,14 @@ export class HashMap {
     func empty = self.length == 0
     func notEmpty = self.length > 0
 
-    private func key_to_hash(key) = key.hashcode
+    private func key_to_hash(key) {
+        const type = typeof key
+        switch type {
+            case String return key.hashcode
+            case Int return "{key}".hashcode
+            default throw "Invalid key type '{type}'. Expected either String or Int"
+        }
+    }
 
     private func hash_to_bin_index(hash) = hash % self.bins_count
 
