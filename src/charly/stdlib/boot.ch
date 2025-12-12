@@ -948,6 +948,8 @@ class Timer {
             groups
         }
 
+        func to_tuple = (...self)
+
         static func create(length, initial = null) = builtin_list_create(length, initial)
         static func create_with(length, callback) {
             const l = List.create(length)
