@@ -170,6 +170,7 @@ class Timer {
 
     class builtin_Number {
         func floor = builtin_math_floor(self)
+        func ceil = builtin_math_floor(self) + 1
         func abs = builtin_math_abs(self)
         func sqrt = builtin_math_sqrt(self)
         func cbrt = builtin_math_cbrt(self)
