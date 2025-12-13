@@ -149,6 +149,8 @@ class Timer {
 }
 
 ->{
+    import hashmap
+
     class builtin_Value {
         func apply(callback) {
             assert callback instanceof Function
@@ -845,6 +847,20 @@ class Timer {
         func notEmpty = @length > 0
 
         func copy = [...self]
+
+        func distinct {
+            const already_seen = hashmap()
+            const new_list = []
+
+            @each(->(entry) {
+                if !already_seen.contains("{entry}") {
+                    new_list.push(entry)
+                    already_seen.set("{entry}", true)
+                }
+            })
+
+            new_list
+        }
 
         func first {
             if @length > 0 {
