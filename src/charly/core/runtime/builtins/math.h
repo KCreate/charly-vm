@@ -35,6 +35,8 @@ void initialize(Thread* thread);
   V(math, floor, 1)         \
   V(math, sqrt, 1)          \
   V(math, cbrt, 1)          \
+  V(math, log, 1)           \
+  V(math, log2, 1)          \
   V(math, abs, 1)
 DEF_BUILTIN_MATH(DEFINE_BUILTIN_METHOD_DECLARATIONS)
 

@@ -78,6 +78,50 @@ RawValue sqrt(Thread*, BuiltinFrame* frame) {
   return kNaN;
 }
 
+RawValue log(Thread*, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+
+  RawValue value = frame->arguments[0];
+
+  if (value.isInt()) {
+    double val = (double)RawInt::cast(value).value();
+    return RawFloat::create(std::log(val));
+  }
+
+  if (value.isFloat()) {
+    if (value == kNaN) {
+      return kNaN;
+    }
+
+    double val = RawFloat::cast(value).value();
+    return RawFloat::create(std::log(val));
+  }
+
+  return kNaN;
+}
+
+RawValue log2(Thread*, BuiltinFrame* frame) {
+  CHECK(frame->arguments[0].isNumber());
+
+  RawValue value = frame->arguments[0];
+
+  if (value.isInt()) {
+    double val = (double)RawInt::cast(value).value();
+    return RawFloat::create(std::log2(val));
+  }
+
+  if (value.isFloat()) {
+    if (value == kNaN) {
+      return kNaN;
+    }
+
+    double val = RawFloat::cast(value).value();
+    return RawFloat::create(std::log2(val));
+  }
+
+  return kNaN;
+}
+
 RawValue cbrt(Thread*, BuiltinFrame* frame) {
   CHECK(frame->arguments[0].isNumber());
 

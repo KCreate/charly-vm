@@ -65,6 +65,8 @@ const builtin_math_floor = @"charly.builtin.math.floor"
 const builtin_math_abs = @"charly.builtin.math.abs"
 const builtin_math_sqrt = @"charly.builtin.math.sqrt"
 const builtin_math_cbrt = @"charly.builtin.math.cbrt"
+const builtin_math_log = @"charly.builtin.math.log"
+const builtin_math_log2 = @"charly.builtin.math.log2"
 
 func getenv(key) {
     assert key instanceof String
@@ -174,6 +176,8 @@ class Timer {
         func abs = builtin_math_abs(self)
         func sqrt = builtin_math_sqrt(self)
         func cbrt = builtin_math_cbrt(self)
+        func log = builtin_math_log(self)
+        func log2 = builtin_math_log2(self)
 
         func max(other) {
             assert other instanceof Number
