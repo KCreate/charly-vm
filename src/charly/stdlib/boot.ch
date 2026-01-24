@@ -704,6 +704,12 @@ class Timer {
             self
         }
 
+        func sortBy(access_function) {
+            @sort(->(left, right) {
+                access_function(left) <=> access_function(right)
+            })
+        }
+
         func sublist(start, count = @length) {
             assert start instanceof Number
             assert count instanceof Number
